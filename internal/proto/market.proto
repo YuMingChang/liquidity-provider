@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option go_package = "internal/market;market";
+
+package market;
+
+service MarketDataService {
+    rpc GetMarketData (MarketDataRequest) returns (MarketDataResponse);
+}
+
+message MarketDataRequest {
+    string symbol = 1;  // Trading pair, e.g., BTC/USD
+}
+message MarketDataResponse {
+    string symbol = 1;
+    double price = 2;   // Current price
+    double volume = 3;  // Trading volume
+}
