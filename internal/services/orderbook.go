@@ -64,3 +64,27 @@ func (s *OrderBookService) GetMarketData(symbol string) (*market.MarketDataRespo
 	client := market.NewMarketDataServiceClient(s.marketConn)
 	return client.GetMarketData(context.Background(), &market.MarketDataRequest{Symbol: symbol})
 }
+
+func (s *OrderBookService) ApplyGridStrategy(symbol string, gridSize float64, levels int) error {
+	// Fetch current market price via gRPC
+	marketData, err := s.GetMarketData(symbol)
+	if err != nil {
+		return err
+	}
+	currentPrice := marketData.Price
+
+	// Place buy and sell orders around the current price
+	for i := 1; i <= levels; i++ {
+		buyPrice := currentPrice - float64(i)*gridSize
+		sellPrice := currentPrice + float64(i)*gridSize
+		// Place buy order
+		if err := s.PlaceOrder(symbol, "buy", buyPrice, 0.1); err != nil {
+			return err
+		}
+		// Place sell order
+		if err := s.PlaceOrder(symbol, "sell", sellPrice, 0.1); err != nil {
+			return err
+		}
+	}
+	return nil
+}
