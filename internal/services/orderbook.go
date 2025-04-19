@@ -88,3 +88,22 @@ func (s *OrderBookService) ApplyGridStrategy(symbol string, gridSize float64, le
 	}
 	return nil
 }
+
+func (s *OrderBookService) CheckSlippage(symbol string, price float64) (bool, error) {
+	marketData, err := s.GetMarketData(symbol)
+	if err != nil {
+		return false, err
+	}
+	marketPrice := marketData.Price
+	slippage := (price - marketPrice) / marketPrice * 100
+	return slippage <= 1.0, nil // Limit slippage to 1%
+}
+
+func (s *OrderBookService) CheckPositionLimit(symbol string) (bool, error) {
+	orders, err := s.repo.GetOpenOrders(symbol)
+	if err != nil {
+		return false, err
+	}
+
+	return len(orders) < 50, nil // Limit to 50 open orders
+}

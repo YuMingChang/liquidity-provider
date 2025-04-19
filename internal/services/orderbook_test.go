@@ -58,3 +58,40 @@ func TestApplyGridStrategy(t *testing.T) {
 		t.Fatalf("Expected 4 open orders, got %d", len(orders))
 	}
 }
+
+func TestCheckSlippage(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	repo := repositories.NewOrderRepository(db)
+	service := NewOrderBookService(repo)
+
+	ok, err := service.CheckSlippage("BTC/USD", 50500)
+	if err != nil || !ok {
+		t.Errorf("Expected valid slippage, got %v, %v", ok, err)
+	}
+
+	ok, err = service.CheckSlippage("BTC/USD", 60000)
+	if err != nil || !ok {
+		t.Errorf("Expected valid slippage, got %v, %v", ok, err)
+	}
+}
+
+func TestCheckPositionLimit(t *testing.T) {
+	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db.AutoMigrate(&models.Order{})
+	repo := repositories.NewOrderRepository(db)
+	service := NewOrderBookService(repo)
+
+	for i := 0; i < 49; i++ {
+		service.PlaceOrder("BTC/USD", "buy", 50000, 0.1)
+	}
+	ok, err := service.CheckPositionLimit("BTC/USD")
+	if err != nil || !ok {
+		t.Errorf("Expected valid position limit, got %v, %v", ok, err)
+	}
+
+	service.PlaceOrder("BTC/USD", "buy", 50000, 0.1)
+	ok, err = service.CheckPositionLimit("BTC/USD")
+	if err != nil || ok {
+		t.Errorf("Expected invalid position limit, got %v, %v", ok, err)
+	}
+}
